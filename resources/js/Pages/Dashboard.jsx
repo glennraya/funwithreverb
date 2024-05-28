@@ -30,6 +30,21 @@ export default function Dashboard({ auth, articles }) {
         exit: { opacity: 0 }
     }
 
+    const handleDelete = article => {
+        router.post(
+            'delete-article-request/',
+            {
+                id: article.id,
+                user_id: auth.user.id
+            },
+            {
+                preserveScroll: true
+            }
+        )
+
+        setNotifications(prevNotifs => [...prevNotifs, article])
+    }
+
     // Handle the simple pagination navigation.
     const handlePageChange = url => {
         if (url) {
@@ -43,6 +58,13 @@ export default function Dashboard({ auth, articles }) {
         )
     }
 
+    const handleRemoveArticle = id => {
+        setArticleList(prevArticleList => ({
+            ...prevArticleList,
+            data: prevArticleList.data.filter(item => item.id !== id)
+        }))
+    }
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -53,6 +75,7 @@ export default function Dashboard({ auth, articles }) {
                         : 'The Guy Who Do Most of the Work 😩'}
                 </h2>
             }
+            removeArticle={handleRemoveArticle}
         >
             <Head title="Dashboard" />
 
@@ -64,7 +87,7 @@ export default function Dashboard({ auth, articles }) {
                                 initial="hidden"
                                 animate="visible"
                                 exit="exit"
-                                variants={variants}
+                                variants={notifAnimation}
                                 transition={{ duration: 0.5 }}
                                 key={article.id}
                             >
@@ -72,7 +95,7 @@ export default function Dashboard({ auth, articles }) {
                                     initial="hidden"
                                     animate="visible"
                                     exit="exit"
-                                    variants={variants}
+                                    variants={notifAnimation}
                                     transition={{ duration: 0.5 }}
                                 >
                                     <Notification
@@ -148,6 +171,11 @@ export default function Dashboard({ auth, articles }) {
                                                         isIconOnly
                                                         variant="faded"
                                                         color="danger"
+                                                        onClick={event =>
+                                                            handleDelete(
+                                                                article
+                                                            )
+                                                        }
                                                     >
                                                         <DeleteIcon />
                                                     </Button>

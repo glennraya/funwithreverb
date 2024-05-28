@@ -7,17 +7,37 @@ import NavLink from '@/Components/NavLink'
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink'
 import DeleteNotification from '@/Components/DeleteNotification'
 
-export default function Authenticated({ user, header, children }) {
+export default function Authenticated({
+    user,
+    header,
+    children,
+    removeArticle
+}) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false)
 
     // Arry of notifications
     const [notifications, setNotifications] = useState([])
+    const [editor, setEditor] = useState(null)
+
     const variants = {
         hidden: { opacity: 0, x: '100%' },
         visible: { opacity: 1, x: 0 },
         exit: { opacity: 0, x: '100%' }
     }
+
+    useEffect(() => {
+        Echo.private(`management.${user.id}`)
+            .listen('DeleteArticleRequestReceived', event => {
+                // You can now do whatever you want here...
+                console.log(event)
+                setEditor(event.editor)
+                setNotifications(prevArray => [...prevArray, event])
+            })
+            .listen('ArticleDeleted', event => {
+                removeArticle(event.article.id)
+            })
+    }, [])
 
     const handleCloseNotif = article => {
         setNotifications(prevNotifs =>
@@ -25,18 +45,31 @@ export default function Authenticated({ user, header, children }) {
         )
     }
 
+    // This will only show the notifications for the intended receiver.
+    const filteredNotifs = notifications.filter(
+        notif => notif.chief.id === user.id
+    )
+
     return (
         <div className="min-h-screen bg-gray-100">
             <ul className="fixed right-6 top-6 z-20 flex flex-col gap-2">
                 <AnimatePresence>
-                    <motion.li
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        variants={variants}
-                        transition={{ duration: 0.5 }}
-                        key={''}
-                    ></motion.li>
+                    {filteredNotifs.map(notif => (
+                        <motion.li
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            variants={variants}
+                            transition={{ duration: 0.5 }}
+                            key={notif.article.id}
+                        >
+                            <DeleteNotification
+                                editor={editor}
+                                entity={notif}
+                                closeNotif={handleCloseNotif}
+                            />
+                        </motion.li>
+                    ))}
                 </AnimatePresence>
             </ul>
 
